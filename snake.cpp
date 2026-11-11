@@ -2,29 +2,38 @@
 #include <vector>
 enum Screen {Menu, Game};
 
-void DrawHoverButton(Rectangle btn, const char* text) {
+void DrawHoverButton(Rectangle btn, const char* text, int id = -1, int* activeId = nullptr) {
     bool isHovered = CheckCollisionPointRec(GetMousePosition(), btn);
     
-    // expand by 4 each side when hovered
+    // update id 
+
+    if (activeId != nullptr && isHovered && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+        *activeId = id;
+    }
+    // check if the button is selected
+    bool isActive = (activeId != nullptr && *activeId == id);
+
     float expand = isHovered ? 8.0f : 0.0f;
-    Rectangle drawRect = {
-        btn.x - expand / 2.0f,
-        btn.y - expand / 2.0f,
-        btn.width + expand,
-        btn.height + expand
+    Rectangle drawRect = { 
+        btn.x - expand / 2.0f, 
+        btn.y - expand / 2.0f, 
+        btn.width + expand, 
+        btn.height + expand 
     };
-    // Slightly lighter color on hover for extra feedback
-    Color btnColor = isHovered ? GRAY : DARKGRAY;
+
+    Color btnColor = isActive ? RED : (isHovered ? GRAY : DARKGRAY);
+    Color btnText = isActive ? WHITE : YELLOW;
+
     DrawRectangleRec(drawRect, btnColor);
 
-    // center the text inside the button
     int fontSize = isHovered ? 22 : 20;
     int textWidth = MeasureText(text, fontSize);
     int textX = drawRect.x + (drawRect.width - textWidth) / 2;
     int textY = drawRect.y + (drawRect.height - fontSize) / 2;
-    
-    DrawText(text, textX, textY, fontSize, WHITE);
+    DrawText(text, textX, textY, fontSize, btnText);
 }
+
+
 
 int main() {
     InitWindow(600, 400, "Snake");
@@ -44,7 +53,7 @@ int main() {
     bool is_alive = true;
     float move_timer = 0.0f;
     float move_delay = 0.15f;
-
+    int active_difficulty = -1;
     int score = 0;
 
     while (!WindowShouldClose()) {
@@ -132,10 +141,11 @@ int main() {
         if (screen == Menu){
             // what does the menu look like
             // draw the tile the buttons, the numbers
-            DrawHoverButton(start_button, "Start");
-            DrawHoverButton(easy_button, "Easy");
-            DrawHoverButton(hard_button, "Hard");
+            DrawHoverButton(start_button, "Start"); 
+            DrawHoverButton(easy_button, "Easy", 0, &active_difficulty);
+            DrawHoverButton(hard_button, "Hard", 1, &active_difficulty);
         }
+
         else if (screen == Game){
             // what does the game look like
             // draw the snake the food the score
@@ -151,8 +161,7 @@ int main() {
             }
             if (!is_alive){
                 DrawText("GAME OVER", 210, 180, 30, WHITE);
-                DrawRectangleRec(retry_button, DARKGRAY);
-                DrawText("Retry", 270, 280, 20, WHITE);
+                DrawHoverButton(retry_button, "Retry"); 
                 DrawText(TextFormat("Final Score: %d", score), 230, 230, 20, YELLOW);
             }
         }
