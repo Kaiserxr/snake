@@ -1,6 +1,31 @@
 #include "raylib.h"
 #include <vector>
 enum Screen {Menu, Game};
+
+void DrawHoverButton(Rectangle btn, const char* text) {
+    bool isHovered = CheckCollisionPointRec(GetMousePosition(), btn);
+    
+    // expand by 4 each side when hovered
+    float expand = isHovered ? 8.0f : 0.0f;
+    Rectangle drawRect = {
+        btn.x - expand / 2.0f,
+        btn.y - expand / 2.0f,
+        btn.width + expand,
+        btn.height + expand
+    };
+    // Slightly lighter color on hover for extra feedback
+    Color btnColor = isHovered ? GRAY : DARKGRAY;
+    DrawRectangleRec(drawRect, btnColor);
+
+    // center the text inside the button
+    int fontSize = isHovered ? 22 : 20;
+    int textWidth = MeasureText(text, fontSize);
+    int textX = drawRect.x + (drawRect.width - textWidth) / 2;
+    int textY = drawRect.y + (drawRect.height - fontSize) / 2;
+    
+    DrawText(text, textX, textY, fontSize, WHITE);
+}
+
 int main() {
     InitWindow(600, 400, "Snake");
     SetTargetFPS(60);
@@ -9,7 +34,7 @@ int main() {
     Rectangle start_button {250, 90, 100, 40};
     Rectangle easy_button {250, 180, 100, 40};
     Rectangle hard_button {250, 270, 100, 40};
-
+    Rectangle retry_button {250, 270, 100, 40};
     std::vector<Vector2> snake = {{100.0f, 100.0f}, {80.0f, 100.0f}, {60.0f, 100.0f}};
     Vector2 fruit = {300.0f, 200.0f};
 
@@ -19,6 +44,8 @@ int main() {
     bool is_alive = true;
     float move_timer = 0.0f;
     float move_delay = 0.15f;
+
+    int score = 0;
 
     while (!WindowShouldClose()) {
         if (screen == Menu){
@@ -74,6 +101,7 @@ int main() {
                 if (is_alive){
                     snake.insert(snake.begin(), next_head);
                     if (next_head.x == fruit.x && next_head.y == fruit.y){
+                        score += 1;
                         fruit.x = GetRandomValue(0, 29) * 20;
                         fruit.y = GetRandomValue(0, 19) * 20;
                     }
@@ -85,6 +113,18 @@ int main() {
                 move_timer = 0.0f;
             }
         }
+        else if (screen == Game && !is_alive){
+            if (CheckCollisionPointRec(GetMousePosition(), retry_button) && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+                screen = Menu;
+                is_alive = true;
+                snake = {{100.0f, 100.0f}, {80.0f, 100.0f}, {60.0f, 100.0f}};
+                direction = {1.0f, 0.0f};
+                next_direction = {1.0f, 0.0f};
+                fruit = {300.0f, 200.0f};
+                move_timer = 0.0f;
+                score = 0;
+            }
+        }
 
         BeginDrawing();
         ClearBackground(BLACK);
@@ -92,12 +132,9 @@ int main() {
         if (screen == Menu){
             // what does the menu look like
             // draw the tile the buttons, the numbers
-            DrawRectangleRec(start_button, DARKGRAY);
-            DrawText("Start", 270, 100, 20, WHITE);
-            DrawRectangleRec(easy_button, DARKGRAY);
-            DrawText("Easy", 270, 190, 20, WHITE);
-            DrawRectangleRec(hard_button, DARKGRAY);
-            DrawText("Hard", 270, 280, 20, WHITE);
+            DrawHoverButton(start_button, "Start");
+            DrawHoverButton(easy_button, "Easy");
+            DrawHoverButton(hard_button, "Hard");
         }
         else if (screen == Game){
             // what does the game look like
@@ -108,10 +145,15 @@ int main() {
                 for (int i = 0; i < snake.size(); i ++ ){
                     DrawRectangle(snake[i].x, snake[i].y, 20, 20, GREEN);
                 }
-            
+                
+                // score board
+                DrawText(TextFormat("Score: %d", score), 10, 10, 20, WHITE);
             }
             if (!is_alive){
                 DrawText("GAME OVER", 210, 180, 30, WHITE);
+                DrawRectangleRec(retry_button, DARKGRAY);
+                DrawText("Retry", 270, 280, 20, WHITE);
+                DrawText(TextFormat("Final Score: %d", score), 230, 230, 20, YELLOW);
             }
         }
         EndDrawing();
