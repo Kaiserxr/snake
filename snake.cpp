@@ -1,6 +1,27 @@
 #include "raylib.h"
 #include <vector>
+#include <fstream>
 enum Screen {Menu, Game};
+
+// load best score
+int LoadBestScore() {
+    int best = 0;
+    std::ifstream file("highscore.txt");
+    if (file.is_open()) {
+        file >> best;
+        file.close();
+    }
+    return best;
+}
+
+// save best score
+void SaveBestScore(int best) {
+    std::ofstream file("highscore.txt");
+    if (file.is_open()) {
+        file << best;
+        file.close();
+    }
+}
 
 void DrawHoverButton(Rectangle btn, const char* text, int id = -1, int* activeId = nullptr) {
     bool isHovered = CheckCollisionPointRec(GetMousePosition(), btn);
@@ -55,6 +76,7 @@ int main() {
     float move_delay = 0.15f;
     int active_difficulty = -1;
     int score = 0;
+    int best_score = LoadBestScore();
 
     while (!WindowShouldClose()) {
         if (screen == Menu){
@@ -111,6 +133,10 @@ int main() {
                     snake.insert(snake.begin(), next_head);
                     if (next_head.x == fruit.x && next_head.y == fruit.y){
                         score += 1;
+                        if (score > best_score) {
+                            best_score = score;
+                            SaveBestScore(best_score);
+                        }
                         fruit.x = GetRandomValue(0, 29) * 20;
                         fruit.y = GetRandomValue(0, 19) * 20;
                     }
@@ -158,11 +184,14 @@ int main() {
                 
                 // score board
                 DrawText(TextFormat("Score: %d", score), 10, 10, 20, WHITE);
+                DrawText(TextFormat("Best: %d", best_score), 10, 35, 20, GOLD);
             }
             if (!is_alive){
-                DrawText("GAME OVER", 210, 180, 30, WHITE);
+                DrawText("GAME OVER", 210, 80, 30, WHITE);
                 DrawHoverButton(retry_button, "Retry"); 
-                DrawText(TextFormat("Final Score: %d", score), 230, 230, 20, YELLOW);
+                DrawText(TextFormat("Final Score: %d", score), 230, 180, 20, YELLOW);
+                DrawText(TextFormat("Best Score: %d", best_score), 230, 210, 20, GOLD);
+
             }
         }
         EndDrawing();
